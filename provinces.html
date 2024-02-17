@@ -1,100 +1,523 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="description" content="DevLab: Style a feature layer">
-    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-    <title>ArcGIS Maps SDK for JavaScript Tutorials: Style a feature layer</title>
-    <style>
-        html,
-        body,
-        #viewDiv {
-            padding: 0;
-            margin: 0;
-            height: 100%;
-            width: 100%;
-        }
-    </style>
-    <link rel="stylesheet" href="https://js.arcgis.com/esri/themes/light/main.css">
-    <script src="https://js.arcgis.com/"></script>
-    <script>
-        require([
-            "esri/config",
-            "esri/Map",
-            "esri/views/MapView",
-            "esri/layers/FeatureLayer",
-            "esri/widgets/Popup",
-            "esri/tasks/QueryTask",
-            "esri/tasks/support/Query"
-        ], function (esriConfig, Map, MapView, FeatureLayer, Popup, QueryTask, Query) {
+<head> 
+	<meta charset="UTF-8">
+	<meta name="description" content="DevLab: Style a feature layer">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Canadian Provinces</title>
+	<!-- ArcGIS Maps SDK for JavaScript Tutorials: Style a feature layer -->
+	<!-- Modified of: https://developers.arcgis.com/documentation/mapping-apis-and-services/data-hosting/workflows/create-feature-service-for-app/ -->
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			display: flex;
+			flex-direction: column;
+			min-height: 100vh;
+		}
 
-            esriConfig.apiKey = "AAPK7ea8e38f6b4b4f969ab170c41c01634akao_m4e5gL3AyABug_bvD9dN7kbXw7BSISXg4Y558XYUVj59ej6DtByYM0Cms4Tz";
+		#container {
+			display: flex;
+			flex: 1;
+		}
 
-            const map = new Map({
-                basemap: "arcgis-light-gray"
-            });
+		#navigation {
+			width: 200px;
+			background-color: #f0f0f0;
+			border-right: 1px solid #ccc;
+			padding: 20px;
+		}
 
-            const view = new MapView({
-                container: "viewDiv",
-                map: map,
-                center: [-98, 60],
-                zoom: 3
-            });
+		#viewDiv {
+			flex: 1;
+			padding: 20px;
+			width: 70%;
+            height: 50%;
+		}
 
-            const featureLayer = new FeatureLayer({
-                url: "URL_DEL_FEATURE_LAYER",
-                outFields: ["*"]
-            });
+		.info {
+			padding: 20px;
+			background-color: #f9f9f9;
+		}
 
-            map.add(featureLayer);
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 20px;
+		}
 
-            view.when(() => {
-                view.popup = new Popup({
-                    dockEnabled: true,
-                    dockOptions: {
-                        buttonEnabled: true,
-                        breakpoint: false
-                    }
-                });
+		th, td {
+			border: 1px solid #ddd;
+			padding: 8px;
+			text-align: left;
+		}
 
-                view.on("click", (event) => {
-                    const queryTask = new QueryTask({
-                        url: featureLayer.url
-                    });
+		th {
+			background-color: #f2f2f2;
+		}
+	</style>
+	<link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css">
+	<script src="https://js.arcgis.com/4.28"></script>
+	<script>
+		require([
+			"esri/config",
+			"esri/Map",
+			"esri/views/MapView",
+			"esri/layers/FeatureLayer"
+		], function(esriConfig, Map, MapView, FeatureLayer ) {
+		// const portal = new Portal({
+		// url: "https://www.arcgis.com/",
+		// authMode: "immediate"
+		// });
+		// OR
 
-                    const query = new Query();
-                    query.geometry = event.mapPoint;
-                    query.outFields = ["*"];
-                    query.returnGeometry = true;
+		esriConfig.apiKey = "AAPK7ea8e38f6b4b4f969ab170c41c01634akao_m4e5gL3AyABug_bvD9dN7kbXw7BSISXg4Y558XYUVj59ej6DtByYM0Cms4Tz"; // Scoped to access the item below
 
-                    queryTask.execute(query)
-                        .then((result) => {
-                            if (result.features.length > 0) {
-                                const feature = result.features[0];
-                                const attributes = feature.attributes;
-                                view.popup.open({
-                                    title: attributes.NAME,
-                                    content: `<b>ID:</b> ${attributes.ID} <br>
-                                              <b>Bird:</b> ${attributes.Bird} <br>
-                                              <b>Animal:</b> ${attributes.Animal} <br>
-                                              <b>Fish:</b> ${attributes.Fish} <br>
-                                              <b>Flower:</b> ${attributes.Flower} <br>
-                                              <b>Tree:</b> ${attributes.Tree} <br>
-                                              <b>Mineral:</b> ${attributes.Mineral} <br>
-                                              <b>Motto:</b> ${attributes.Motto} <br>
-                                              <b>Other:</b> ${attributes.Other}`
-                                });
-                            }
-                        })
-                        .catch((error) => {
-                            console.error("Error:", error);
-                        });
-                });
-            });
-        });
-    </script>
+		const map = new Map({
+			basemap: "arcgis-light-gray" //Basemap layer service
+		});
+
+		const view = new MapView({
+			container: "viewDiv",
+			map: map,
+			center: [-118.49,34.01], //Longitude, latitude
+			zoom: 13
+		});
+
+		const popupParcels = {
+			"title": "Parcel",
+			"content": "<b>ID:</b> {ain} <br><b>Use type:</b> {usetype}<br><b>Description:</b> {usedescrip}<br><b>Address:</b> {situsfulla}"
+		}
+		// Create the layer and set the renderer and popup
+		const parcels = new FeatureLayer({
+			portalItem: {
+				id: "c05b5f97892e4612856612b5a8910da8"
+			},
+			popupTemplate: popupParcels
+		});
+
+		// Add the layer
+		map.add(parcels);
+		});
+  </script>
 </head>
+
 <body>
-    <div id="viewDiv"></div>
+	<div id="container">
+		<div id="navigation">
+		  <!-- List of Canadian provinces -->
+			<h2>Canadian Provinces</h2>
+				<ul>
+					<li><a href="#">Alberta</a></li>
+					<li><a href="#">British Columbia</a></li>
+					<li><a href="#">Manitoba</a></li>
+					<li><a href="#">New Brunswick</a></li>
+					<li><a href="#">Newfoundland and Labrador</a></li>
+					<li><a href="#">Nova Scotia</a></li>
+					<li><a href="#">Ontario</a></li>
+					<li><a href="#">Prince Edward Island</a></li>
+					<li><a href="#">Quebec</a></li>
+					<li><a href="#">Saskatchewan</a></li>
+					<li><a href="#">Northwest Territories</a></li>
+					<li><a href="#">Nunavut</a></li>
+					<li><a href="#">Yukon</a></li>
+				</ul>
+		</div>
+		<div id="viewDiv"></div>
+	</div> 
+	<!-- end container -->
+	
+	<!-- start information -->
+	<!-- Alberta -->	
+	<div class="info" id="Alberta">
+		<h2>Información sobre Alberta</h2>
+			<table>
+				<tr>
+					<th>Name</th>
+					<th>Bird</th>
+					<th>Animal</th>
+					<th>Fish</th>
+					<th>Flower</th>
+					<th>Tree</th>
+					<th>Mineral</th>
+					<th>Motto</th>
+					<th>Other</th>
+				</tr>
+				<tr>
+					<td>Alberta</td>
+					<td>Great horned owl</td>
+					<td>Bighorn sheep</td>
+					<td>Bull trout</td>
+					<td>Wild rose</td>
+					<td>Lodgepole pine</td>
+					<td>Petrified wood</td>
+					<td>Fortis et liber (strong and free)</td>
+					<td>Provincial grass: rough fescue<br>song: "Alberta"<br>gemstone: ammolite</td>
+				</tr>
+			</table>
+	</div>
+	<!-- British Columbia -->
+	<div class="info" id="BritishColumbia">
+		<h2>Información sobre British Columbia</h2>
+			<table>
+				<tr>
+					<th>Name</th>
+					<th>Bird</th>
+					<th>Animal</th>
+					<th>Fish</th>
+					<th>Flower</th>
+					<th>Tree</th>
+					<th>Mineral</th>
+					<th>Motto</th>
+					<th>Other</th>
+				</tr>
+				<tr>
+					<td>British Columbia</td>
+					<td>Steller's jay</td>
+					<td>Spirit bear</td>
+					<td>Pacific salmon</td>
+					<td>Pacific dogwood</td>
+					<td>Western redcedar</td>
+					<td>Jade</td>
+					<td>Splendor sine occasu (splendour without diminishment)</td>
+					<td>-</td>
+				</tr>
+			</table>
+	</div>
+	<!-- Manitoba -->
+	<div class="info" id="Manitoba">
+		<h2>Información sobre Manitoba</h2>
+			<table>
+				<tr>
+					<th>Name</th>
+					<th>Bird</th>
+					<th>Animal</th>
+					<th>Fish</th>
+					<th>Flower</th>
+					<th>Tree</th>
+					<th>Mineral</th>
+					<th>Motto</th>
+					<th>Other</th>
+				</tr>
+				<tr>
+					<td>Manitoba</td>
+					<td>Great grey owl</td>
+					<td>Plains bison</td>
+					<td>Walleye</td>
+					<td>Prairie crocus</td>
+					<td>White spruce</td>
+					<td>-</td>
+					<td>Gloriosus et liber (glorious and free)</td>
+					<td>Provincial grass: big bluestem<br>fossil: Tylosaurus pembinensis<br>soil: Newdale soil (Orthic Black Chernozem)</td>
+				</tr>
+		</table>
+	</div>
+	<!-- New Brunswick -->
+	<div class="info" id="NewBrunswick">
+		<h2>Información sobre New Brunswick</h2>
+			<table>
+				<tr>
+					<th>Name</th>
+					<th>Bird</th>
+					<th>Animal</th>
+					<th>Fish</th>
+					<th>Flower</th>
+					<th>Tree</th>
+					<th>Mineral</th>
+					<th>Motto</th>
+					<th>Other</th>
+				</tr>
+				<tr>
+					<td>New Brunswick</td>
+					<td>Black-capped chickadee</td>
+					<td>-</td>
+					<td>-</td>
+					<td>Purple violet</td>
+					<td>Balsam fir</td>
+					<td>-</td>
+					<td>Spem reduxit (hope was restored)</td>
+					<td>Provincial soil: Holmesville<br>Salmon Fly: Picture Province</td>
+				</tr>
+			</table>
+	</div>
+	<!-- Newfoundland and Labrador -->
+	<div class="info" id="NewfoundlandLabrador">
+		<h2>Información sobre Newfoundland and Labrador</h2>
+			<table>
+				<tr>
+					<th>Name</th>
+					<th>Bird</th>
+					<th>Animal</th>
+					<th>Fish</th>
+					<th>Flower</th>
+					<th>Tree</th>
+					<th>Mineral</th>
+					<th>Motto</th>
+					<th>Other</th>
+				</tr>
+				<tr>
+					<td>Newfoundland and Labrador</td>
+					<td>Atlantic puffin (provincial bird)<br>Willow ptarmigan and Rock ptarmigan (game bird)</td>
+					<td>Woodland caribou (Newfoundland regimental mascot)<br>Newfoundland pony (heritage animal)</td>
+					<td>-</td>
+					<td>Purple pitcher plant</td>
+					<td>Black spruce</td>
+					<td>Labradorite</td>
+					<td>Quaerite primum regnum dei (seek ye first the kingdom of God)</td>
+					<td>Anthem: "Ode to Newfoundland"<br>Newfoundland Tricolour<br>Labrador flag</td>
+				</tr>
+			</table>
+	</div>
+	<!-- Northwest Territories -->
+	<div class="info" id="NorthwestTerritories">
+		<h2>Información sobre Northwest Territories</h2>
+			<table>
+				<tr>
+					<th>Name</th>
+					<th>Bird</th>
+					<th>Animal</th>
+					<th>Fish</th>
+					<th>Flower</th>
+					<th>Tree</th>
+					<th>Mineral</th>
+					<th>Motto</th>
+					<th>Other</th>
+				</tr>
+				<tr>
+					<td>Northwest Territories</td>
+					<td>Gyrfalcon</td>
+					<td>-</td>
+					<td>Arctic grayling</td>
+					<td>Mountain avens</td>
+					<td>Tamarack larch</td>
+					<td>Gold</td>
+					<td>-</td>
+					<td>Territorial gemstone: diamond</td>
+				</tr>
+			</table>
+	</div>
+	<!-- Nova Scotia -->
+	<div class="info" id="NovaScotia">
+		<h2>Información sobre Nova Scotia</h2>
+			<table>
+				<tr>
+					<th>Name</th>
+					<th>Bird</th>
+					<th>Animal</th>
+					<th>Fish</th>
+					<th>Flower</th>
+					<th>Tree</th>
+					<th>Mineral</th>
+					<th>Motto</th>
+					<th>Other</th>
+				</tr>
+				<tr>
+					<td>Nova Scotia</td>
+					<td>Osprey</td>
+					<td>Nova Scotia Duck Tolling Retriever<br>Sable Island horse</td>
+					<td>Brook trout</td>
+					<td>Mayflower</td>
+					<td>Red spruce</td>
+					<td>Stilbite</td>
+					<td>Munit haec et altera vincit (one defends and the other conquers)</td>
+					<td>Sailing ambassador: Bluenose II<br>Nova Scotia tartan; berry: wild blueberry; fossil: Hylonomus lyelli; gemstone: agate</td>
+				</tr>
+			</table>
+	</div>
+	<!-- Nunavut -->
+	<div class="info" id="Nunavut">
+		<h2>Información sobre Nunavut</h2>
+			<table>
+				<tr>
+					<th>Name</th>
+					<th>Bird</th>
+					<th>Animal</th>
+					<th>Fish</th>
+					<th>Flower</th>
+					<th>Tree</th>
+					<th>Mineral</th>
+					<th>Motto</th>
+					<th>Other</th>
+				</tr>
+				<tr>
+					<td>Nunavut</td>
+					<td>Rock ptarmigan</td>
+					<td>Canadian Inuit Dog</td>
+					<td>-</td>
+					<td>Purple saxifrage</td>
+					<td>-</td>
+					<td>-</td>
+					<td>Nunavut Sanginivut (Our land  our strength)</td>
+					<td>-</td>
+				</tr>
+			</table>
+	</div>
+	<!-- Ontario -->
+	<div class="info" id="Ontario">
+		<h2>Información sobre Ontario</h2>
+			<table>
+				<tr>
+					<th>Name</th>
+					<th>Bird</th>
+					<th>Animal</th>
+					<th>Fish</th>
+					<th>Flower</th>
+					<th>Tree</th>
+					<th>Mineral</th>
+					<th>Motto</th>
+					<th>Other</th>
+				</tr>
+				<tr>
+					<td>Ontario</td>
+					<td>Common loon</td>
+					<td>-</td>
+					<td>-</td>
+					<td>White trillium</td>
+					<td>Eastern white pine</td>
+					<td>Amethyst</td>
+					<td>Ut incepit fidelis sic permanet (loyal she began thus she remains)</td>
+					<td>Anthem (unofficial): "A Place to Stand  A Place to Grow (Ontari-ari-ari-o!)"</td>
+				</tr>
+			</table>
+	</div>
+	<!-- Prince Edward Island -->
+	<div class="info" id="PrinceEdwardIsland">
+		<h2>Información sobre Prince Edward Island</h2>
+			<table>
+				<tr>
+					<th>Name</th>
+					<th>Bird</th>
+					<th>Animal</th>
+					<th>Fish</th>
+					<th>Flower</th>
+					<th>Tree</th>
+					<th>Mineral</th>
+					<th>Motto</th>
+					<th>Other</th>
+				</tr>
+				<tr>
+					<td>Prince Edward Island</td>
+					<td>Blue jay</td>
+					<td>Red fox</td>
+					<td>-</td>
+					<td>Lady's slipper</td>
+					<td>Red oak</td>
+					<td>-</td>
+					<td>Parva sub ingenti (the small under the protection of the great)</td>
+					<td>Provincial soil: Charlottetown; anthem: "The Island Hymn"</td>
+				</tr>
+			</table>
+	</div>
+	<!-- Quebec -->
+	<div class="info" id="Quebec">
+		<h2>Información sobre Quebec</h2>
+			<table>
+				<tr>
+					<th>Name</th>
+					<th>Bird</th>
+					<th>Animal</th>
+					<th>Fish</th>
+					<th>Flower</th>
+					<th>Tree</th>
+					<th>Mineral</th>
+					<th>Motto</th>
+					<th>Other</th>
+				</tr>
+				<tr>
+					<td>Quebec</td>
+					<td>Snowy owl</td>
+					<td>-</td>
+					<td>-</td>
+					<td>Blue flag iris</td>
+					<td>Yellow birch</td>
+					<td>-</td>
+					<td>Je me souviens (I remember)</td>
+					<td>Provincial symbol: fleur-de-lis; anthem (unofficial): "Gens du pays"</td>
+				</tr>
+			</table>
+	</div>
+	<!-- Saskatchewan -->
+	<div class="info" id="Saskatchewan">
+		<h2>Información sobre Saskatchewan</h2>
+			<table>
+				<tr>
+					<th>Name</th>
+					<th>Bird</th>
+					<th>Animal</th>
+					<th>Fish</th>
+					<th>Flower</th>
+					<th>Tree</th>
+					<th>Mineral</th>
+					<th>Motto</th>
+					<th>Other</th>
+				</tr>
+				<tr>
+					<td>Saskatchewan</td>
+					<td>Sharp-tailed grouse</td>
+					<td>White-tailed deer</td>
+					<td>Walleye</td>
+					<td>Western red lily</td>
+					<td>White birch</td>
+					<td>Potash</td>
+					<td>Multis e gentibus vires (from many peoples  strength)</td>
+					<td>Provincial grass: needle-and-thread grass<br>fruit emblem: Saskatoon berry<br>Fossil: Tyrannosaurus rex</td>
+				</tr>
+	</table>
+	</div>
+	<!-- Yukon -->
+	<div class="info" id="Yukon">
+		<h2>Información sobre Yukon</h2>
+			<table>
+				<tr>
+					<th>Name</th>
+					<th>Bird</th>
+					<th>Animal</th>
+					<th>Fish</th>
+					<th>Flower</th>
+					<th>Tree</th>
+					<th>Mineral</th>
+					<th>Motto</th>
+					<th>Other</th>
+				</tr>
+				<tr>
+					<td>Yukon</td>
+					<td>Common raven</td>
+					<td>-</td>
+					<td>-</td>
+					<td>Fireweed</td>
+					<td>Subalpine fir</td>
+					<td>Lazulite</td>
+					<td>-</td>
+					<td>-</td>
+				</tr>
+			</table>
+	</div> 
+
+	<!-- JS for tb info -->
+	<script>
+		// Get all links in navigation
+		const links = document.querySelectorAll('#navigation a');
+
+		// Get all info divs
+		const infoDivs = document.querySelectorAll('.info');
+
+		// Function for click event
+		function handleClick(event) {
+		  event.preventDefault(); // Prevent default link behavior
+
+		  // Hide all info divs
+		  infoDivs.forEach(div => div.style.display = 'none');
+
+		  // Show the corresponding info div based on clicked link
+		  const provinceName = this.innerText;
+		  const provinceDiv = document.getElementById(provinceName);
+		  if (provinceDiv) {
+			provinceDiv.style.display = 'block';
+		  }
+		}
+
+		// Add click event listener to each link
+		links.forEach(link => link.addEventListener('click', handleClick));
+	</script>
 </body>
 </html>
