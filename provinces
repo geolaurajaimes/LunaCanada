@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="DevLab: Style a feature layer">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>ArcGIS Maps SDK for JavaScript Tutorials: Style a feature layer</title>
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.28"></script>
+    <script>
+        require([
+            "esri/config",
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/layers/FeatureLayer",
+            "esri/widgets/Popup",
+            "esri/tasks/QueryTask",
+            "esri/tasks/support/Query"
+        ], function (esriConfig, Map, MapView, FeatureLayer, Popup, QueryTask, Query) {
+
+            esriConfig.apiKey = "AAPK8ee79f54a339494c8931908c7f2458bduDivabZwQBmDJf0JrwugKmlUUx7IEjM8aHkYlgZehUfqU01lmNcNhD9maWndFU1W";
+
+            const map = new Map({
+                basemap: "arcgis-light-gray"
+            });
+
+            const view = new MapView({
+                container: "viewDiv",
+                map: map,
+                center: [-98, 60],
+                zoom: 3
+            });
+
+            const featureLayer = new FeatureLayer({
+                url: "URL_DEL_FEATURE_LAYER",
+                outFields: ["*"]
+            });
+
+            map.add(featureLayer);
+
+            view.when(() => {
+                view.popup = new Popup({
+                    dockEnabled: true,
+                    dockOptions: {
+                        buttonEnabled: true,
+                        breakpoint: false
+                    }
+                });
+
+                view.on("click", (event) => {
+                    const queryTask = new QueryTask({
+                        url: featureLayer.url
+                    });
+
+                    const query = new Query();
+                    query.geometry = event.mapPoint;
+                    query.outFields = ["*"];
+                    query.returnGeometry = true;
+
+                    queryTask.execute(query)
+                        .then((result) => {
+                            if (result.features.length > 0) {
+                                const feature = result.features[0];
+                                const attributes = feature.attributes;
+                                view.popup.open({
+                                    title: attributes.NAME,
+                                    content: `<b>ID:</b> ${attributes.ID} <br>
+                                              <b>Bird:</b> ${attributes.Bird} <br>
+                                              <b>Animal:</b> ${attributes.Animal} <br>
+                                              <b>Fish:</b> ${attributes.Fish} <br>
+                                              <b>Flower:</b> ${attributes.Flower} <br>
+                                              <b>Tree:</b> ${attributes.Tree} <br>
+                                              <b>Mineral:</b> ${attributes.Mineral} <br>
+                                              <b>Motto:</b> ${attributes.Motto} <br>
+                                              <b>Other:</b> ${attributes.Other}`
+                                });
+                            }
+                        })
+                        .catch((error) => {
+                            console.error("Error:", error);
+                        });
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <div id="viewDiv"></div>
+</body>
+</html>
