@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head> 
+    <!-- Student: Laura Jaimes -->
 	<meta charset="UTF-8">
 	<meta name="description" content="DevLab: Style a feature layer">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
 	<title>Canadian Provinces</title>
 	<!-- ArcGIS Maps SDK for JavaScript Tutorials: Style a feature layer -->
 	<!-- Modified of: https://developers.arcgis.com/documentation/mapping-apis-and-services/data-hosting/workflows/create-feature-service-for-app/ -->
@@ -81,23 +82,22 @@
 			container: "viewDiv",
 			map: map,
 			center: [-118.49,34.01], //Longitude, latitude
-			zoom: 13
+			zoom: 7
 		});
 
-		const popupParcels = {
-			"title": "Parcel",
-			"content": "<b>ID:</b> {ain} <br><b>Use type:</b> {usetype}<br><b>Description:</b> {usedescrip}<br><b>Address:</b> {situsfulla}"
+		const popupPRNAME = {
+			"title": "Province ",
 		}
 		// Create the layer and set the renderer and popup
-		const parcels = new FeatureLayer({
+		const provinceca = new FeatureLayer({
 			portalItem: {
 				id: "c05b5f97892e4612856612b5a8910da8"
 			},
-			popupTemplate: popupParcels
+			popupTemplate: popupPRNAME
 		});
 
 		// Add the layer
-		map.add(parcels);
+		map.add(provinceca);
 		});
   </script>
 </head>
