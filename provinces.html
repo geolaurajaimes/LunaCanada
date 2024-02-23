@@ -4,10 +4,11 @@
     <!-- Student: Laura Jaimes -->
 	<meta charset="UTF-8">
 	<meta name="description" content="DevLab: Style a feature layer">
-	<meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+	<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+			
 	<title>Canadian Provinces</title>
 	<!-- ArcGIS Maps SDK for JavaScript Tutorials: Style a feature layer -->
-	<!-- Modified of: https://developers.arcgis.com/documentation/mapping-apis-and-services/data-hosting/workflows/create-feature-service-for-app/ -->
+	<!-- Modified of: https://developers.arcgis.com/documentation/mapping-apis-and-services/data-hosting/workflows/create-feature-service-for-app/#display-a-popup -->
 	<style>
 		body { 
             margin: 0;
@@ -79,41 +80,8 @@
         }		
 		
 	</style>
-	<link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css">
-	<script src="https://js.arcgis.com/4.28"></script>
-	<script>
-<script>
-        require(["esri/config", "esri/Map", "esri/WebMap", "esri/views/MapView", "esri/widgets/ScaleBar", "esri/widgets/Legend"
-        ], function (esriConfig, Map, WebMap, MapView, ScaleBar, Legend) {
-
-            // parameter esriConfig for the API Key: https://developers.arcgis.com/javascript/latest/api-reference/esri-config.html#apiKey
-            esriConfig.apiKey = "AAPK8ee79f54a339494c8931908c7f2458bduDivabZwQBmDJf0JrwugKmlUUx7IEjM8aHkYlgZehUfqU01lmNcNhD9maWndFU1W";
-
-            const webmap = new WebMap({
-                portalItem: {
-                    id: "814aa1ed841b46aca482f4cf78281ac9" 
-                }
-            });
-
-            const view = new MapView({
-                container: "viewDiv",
-                map: webmap,
-                zoom: 2 // Zoom level set to 2
-            });
-
-            const scalebar = new ScaleBar({
-                view: view
-            });
-            view.ui.add(scalebar, "bottom-right");
-
-            const legend = new Legend({
-                view: view,
-            });
-            view.ui.add(legend, "bottom-left");	
-			
-        });
-
-  </script>
+	<link rel="stylesheet" href="https://js.arcgis.com/4.18/esri/themes/light/main.css">
+	<script src="https://js.arcgis.com/4.18/"></script>
 </head>
 
 <body>
@@ -137,7 +105,45 @@
 					<li><a href="#">Yukon</a></li>
 				</ul>
 		</div>
+		
 		<div id="viewDiv"></div>
+
+		    <script>
+				require([
+					"esri/config",
+					"esri/Map",
+					"esri/views/MapView",
+					"esri/layers/FeatureLayer"
+				], function (esriConfig, Map, MapView, FeatureLayer) {
+					
+					esriConfig.apiKey = "AAPK8ee79f54a339494c8931908c7f2458bduDivabZwQBmDJf0JrwugKmlUUx7IEjM8aHkYlgZehUfqU01lmNcNhD9maWndFU1W";
+					
+					const map = new Map({
+						basemap: "arcgis-modern-antique"
+					});
+					
+					const view = new MapView({
+						map: map,
+						center: [-106.3468, 56.1304], 
+						zoom: 4, 
+						container: "viewDiv"
+					});
+					
+					const popupCanada = {
+					"title": "{PRENAME}", 	
+					"content": "This province is named {PRENAME}." 	
+					};
+					
+					const Canada = new FeatureLayer({
+						url: "https://luna.flemingcollege.ca/arcgis/rest/services/geom99am/ljaimesaCanada/MapServer/0",
+						popupTemplate: popupCanada
+					});
+
+					map.add(Canada);
+					
+				});
+			</script>
+		
 	</div> 
 	<!-- end container -->
 	
